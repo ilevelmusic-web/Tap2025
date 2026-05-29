@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>TAP</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#fff;color:#1a1a2e;font-family:-apple-system,BlinkMacSystemFont,sans-serif;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}
+.screen{display:none;position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#f5f7ff}
+.screen.active{display:block}
+
+/* SPLASH stays dark */
+#s-splash{background:#0b0b0f}
+
+.pad{padding:20px 20px 160px}
+button{font-family:-apple-system,sans-serif;cursor:pointer}
+
+/* PRIMARY BUTTON — bold and colourful */
+.btn{width:100%;padding:17px;border-radius:16px;border:none;
+  background:linear-gradient(135deg,#1a7fd4,#0056b3);
+  color:#fff;font-size:17px;font-weight:700;margin-bottom:12px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 16px rgba(26,127,212,.35)}
+.btn:active{opacity:.85;transform:scale(.98)}
+.btn.ghost{background:#fff;border:2px solid #1a7fd4;color:#1a7fd4;
+  box-shadow:none;font-size:15px}
+.btn.ghost:active{background:#f0f7ff}
+.btn.red{background:linear-gradient(135deg,#e74c3c,#c0392b);box-shadow:0 4px 16px rgba(231,76,60,.3)}
+.btn.green{background:linear-gradient(135deg,#27ae60,#219150);box-shadow:0 4px 16px rgba(39,174,96,.3)}
+.btn.dim{opacity:.35;pointer-events:none}
+
+.logo{font-weight:900;letter-spacing:-3px;display:inline-flex}
+.t{color:#1a7fd4}.a{color:#FFB612}.p{color:#DE3831}
+
+/* BACK BUTTON */
+.back{display:none}
+/* BOTTOM BACK BAR */
+.bottom-bar{position:fixed;bottom:calc(64px + env(safe-area-inset-bottom,0px));
+  left:0;right:0;padding:8px 20px 6px;
+  background:#fff;
+  border-top:1px solid #f0f2f7;
+  z-index:30;pointer-events:none}
+.back-bar-btn{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;
+  padding:12px 22px;border-radius:24px;border:none;
+  background:#1a7fd4;color:#fff;font-size:15px;font-weight:700;
+  font-family:-apple-system,sans-serif;cursor:pointer;
+  box-shadow:0 4px 16px rgba(26,127,212,.35)}
+.back-bar-btn:active{opacity:.85;transform:scale(.97)}
+
+h2{font-size:23px;font-weight:800;margin-bottom:4px;color:#1a1a2e}
+.sub{font-size:14px;color:#7a8499;margin-bottom:20px}
+.lbl{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+  color:#9aa3b5;margin-bottom:6px;margin-top:16px;font-weight:600}
+
+/* FORM FIELDS */
+.field{width:100%;padding:14px 16px;border-radius:12px;background:#fff;
+  border:1.5px solid #e0e6f0;color:#1a1a2e;font-size:15px;
+  font-family:-apple-system,sans-serif;-webkit-appearance:none;display:block;
+  box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.field:focus{outline:none;border-color:#1a7fd4;box-shadow:0 0 0 3px rgba(26,127,212,.12)}
+
+/* SAFE AREA */
+.safe-bottom{padding-bottom:max(20px,env(safe-area-inset-bottom))}
+
+/* BOTTOM NAV — pronounced and colourful */
+.bnav{position:fixed;bottom:0;left:0;right:0;
+  background:#fff;border-top:1px solid #e8edf5;
+  display:flex;padding-bottom:env(safe-area-inset-bottom,0px);
+  box-shadow:0 -4px 20px rgba(0,0,0,.08);z-index:40}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:6px 2px;cursor:pointer;font-size:10px;font-weight:600}
+.bni-inner{display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:5px 10px;border-radius:10px;
+  color:#9aa3b5;min-width:52px}
+.bni.on .bni-inner{background:#1a7fd4;color:#fff}
+.bni.on .bni-inner svg{stroke:#fff}
+.bni-inner svg{width:20px;height:20px;stroke:#9aa3b5}
+
+/* HOME */
+.hb{padding-bottom:160px}
+
+/* WALLET CARD — kept dark for contrast */
+.wcard{background:linear-gradient(135deg,#0f1e3d,#1a3a6e);
+  border-radius:24px;padding:22px;margin-bottom:20px;
+  position:relative;overflow:hidden;min-height:240px;
+  box-shadow:0 8px 32px rgba(26,86,174,.3)}
+.wbar{position:absolute;top:0;left:0;right:0;height:5px;display:flex}
+.wlbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(160,200,255,.6);margin-top:10px;margin-bottom:6px}
+.wbal{font-size:46px;font-weight:800;letter-spacing:-2px;line-height:1;color:#fff}
+.wsym{font-size:22px;opacity:.7;vertical-align:super;font-weight:500}
+.wcts{font-size:22px;opacity:.45}
+.wsub{font-size:12px;color:rgba(160,200,255,.55);margin-top:4px;font-family:monospace}
+.wacts{display:flex;gap:10px;margin-top:18px}
+.wbtn{flex:1;padding:12px 8px;border-radius:14px;border:none;
+  font-size:13px;font-weight:700;font-family:-apple-system,sans-serif;cursor:pointer;
+  transition:opacity .2s,transform .15s}
+.wbtn:active{opacity:.8;transform:scale(.97)}
+.wadd{background:#FFB612;color:#1a1a2e}
+.wsend{background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);color:#fff}
+.wqr{width:44px;flex:none;background:rgba(255,255,255,.1);
+  border:1.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8)}
+.qrpanel{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:24px;
+  background:linear-gradient(135deg,#0a1422,#1a2e50);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:5px;z-index:5}
+.qrpanel.show{display:flex}
+
+/* SECTION HEADERS */
+.shdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.stitle{font-size:17px;font-weight:800;color:#1a1a2e}
+.slink{font-size:13px;color:#1a7fd4;cursor:pointer;font-weight:700}
+
+/* RECEIVER CHIPS */
+.rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:4px}
+.rchip{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.rav{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:17px;font-weight:800;border:2px solid #e0e6f0;
+  background:#fff;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.rav.nw{background:#f0f7ff;border:2px dashed #1a7fd4}
+.rfbadge{position:absolute;bottom:-2px;right:-2px;width:22px;height:22px;
+  border-radius:50%;background:#fff;font-size:13px;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid #f5f7ff;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.rname{font-size:11px;color:#4a5568;text-align:center;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:62px;font-weight:600}
+.rlast{font-size:9px;color:#9aa3b5;text-align:center}
+
+/* TRANSACTION LIST */
+.txrow{display:flex;align-items:center;gap:12px;padding:14px 0;
+  border-bottom:1px solid #f0f2f7;cursor:pointer}
+.txrow:active{background:#f8faff;margin:0 -20px;padding:14px 20px}
+.txic{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;
+  justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.txic.out{background:#fff0f0;color:#e74c3c;border:1px solid #ffd5d5}
+.txic.in{background:#f0fff8;color:#27ae60;border:1px solid #c3f0d8}
+.txname{font-size:14px;font-weight:700;color:#1a1a2e}
+.txdate{font-size:11px;color:#9aa3b5;margin-top:2px}
+.txamt{font-size:14px;font-weight:800;font-family:monospace;text-align:right}
+.txamt.out{color:#e74c3c}.txamt.in{color:#27ae60}
+.txrv{font-size:11px;color:#9aa3b5;text-align:right;margin-top:1px}
+
+/* OTP */
+.otp-boxes{display:flex;gap:10px;justify-content:center;margin:24px 0 8px}
+.ob{width:48px;height:58px;border-radius:12px;background:#fff;
+  border:2px solid #e0e6f0;display:flex;align-items:center;justify-content:center;
+  font-size:24px;font-weight:800;color:#1a1a2e;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);transition:border-color .2s}
+.ob.f{border-color:#1a7fd4;background:#f0f7ff}
+.kpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:300px;margin:18px auto 0}
+.kbtn{height:58px;border-radius:14px;background:#fff;
+  border:1.5px solid #e0e6f0;color:#1a1a2e;font-size:22px;font-weight:600;
+  font-family:-apple-system,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.kbtn:active{background:#f0f7ff;border-color:#1a7fd4}
+
+/* TOP-UP */
+.amtbig{background:none;border:none;outline:none;font-size:54px;font-weight:800;
+  color:#1a1a2e;width:100%;text-align:center;letter-spacing:-2px;
+  -webkit-appearance:none;font-family:-apple-system,sans-serif}
+.mc{background:#fff;border:1.5px solid #e0e6f0;border-radius:16px;
+  padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:12px;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.mc:active{background:#f0f7ff;border-color:#1a7fd4}
+.mcic{font-size:28px;width:46px;height:46px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  background:#f5f7ff;flex-shrink:0}
+.mct{font-size:15px;font-weight:700;color:#1a1a2e}
+.mcs{font-size:12px;color:#7a8499;margin-top:2px}
+.refbox{background:#f0f7ff;border:1.5px solid #1a7fd4;border-radius:12px;
+  padding:14px 16px;display:flex;justify-content:space-between;
+  align-items:center;margin:14px 0}
+.refcode{font-family:monospace;font-size:16px;color:#1a7fd4;letter-spacing:2px;font-weight:700}
+.cpbtn{background:#1a7fd4;border:none;color:#fff;padding:8px 16px;
+  border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;
+  font-family:-apple-system,sans-serif}
+.bdr{display:flex;justify-content:space-between;padding:12px 0;
+  border-bottom:1px solid #f0f2f7;font-size:13px;color:#4a5568}
+.bdrv{font-family:monospace;color:#1a7fd4;font-weight:700}
+.pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+.pill{padding:8px 18px;border-radius:20px;background:#fff;border:2px solid #1a7fd4;
+  font-size:13px;font-weight:700;color:#1a7fd4;cursor:pointer;
+  font-family:-apple-system,sans-serif}
+.pill:active{background:#1a7fd4;color:#fff}
+
+/* ID */
+.cambox{background:#f5f7ff;border-radius:14px;height:180px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:10px;position:relative;overflow:hidden;
+  border:2px solid #e0e6f0}
+.uz{background:#f5f7ff;border:2px dashed #1a7fd4;border-radius:14px;
+  padding:24px;text-align:center;margin-bottom:4px;cursor:pointer}
+.uz.done{border-color:#27ae60;background:#f0fff8}
+
+/* DRUM PICKER */
+.drum-wrap{position:relative;height:288px;overflow:hidden;
+  touch-action:none;-webkit-user-select:none;user-select:none;margin:0 -20px}
+.drum-fade{position:absolute;left:0;right:0;height:96px;z-index:2;pointer-events:none}
+.drum-fade.t{top:0;background:linear-gradient(to bottom,#f5f7ff,transparent)}
+.drum-fade.b{bottom:0;background:linear-gradient(to top,#f5f7ff,transparent)}
+.drum-sel{position:absolute;top:50%;left:16px;right:16px;height:96px;
+  transform:translateY(-50%);border:2.5px solid #1a7fd4;border-radius:16px;
+  background:rgba(26,127,212,.06);pointer-events:none;z-index:1}
+.drum-list{position:absolute;left:0;right:0;top:0;will-change:transform}
+.drum-item{height:96px;display:flex;align-items:center;gap:16px;
+  padding:0 28px;flex-shrink:0;transition:opacity .15s}
+.diflag{font-size:46px;line-height:1}
+.diname{font-size:20px;font-weight:800;color:#1a1a2e}
+.dicode{font-size:12px;color:#7a8499;font-family:monospace}
+.dirate{font-size:12px;color:#1a7fd4;font-family:monospace;margin-top:2px}
+.selinfo{background:#fff;border:2px solid #1a7fd4;border-radius:16px;
+  padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:12px;
+  box-shadow:0 4px 16px rgba(26,127,212,.12)}
+.selflag{font-size:30px}
+.selname{font-size:16px;font-weight:800;color:#1a1a2e}
+.selsub{font-size:12px;color:#7a8499;margin-top:2px;font-family:monospace}
+.rtag{background:#f0f7ff;border:2px solid #1a7fd4;border-radius:14px;
+  padding:12px 16px;display:flex;align-items:center;gap:12px;
+  margin-bottom:12px;cursor:pointer;box-shadow:0 2px 8px rgba(26,127,212,.1)}
+.rtag:active{background:#ddeeff}
+.rtav{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:14px;font-weight:800;flex-shrink:0}
+.rtname{font-size:15px;font-weight:800;color:#1a1a2e}
+.rtph{font-size:12px;color:#7a8499;margin-top:2px}
+.rtarr{margin-left:auto;font-size:12px;font-weight:800;color:#1a7fd4;flex-shrink:0}
+.nonrecv{background:#fff8ee;border:2px dashed #FFB612;border-radius:14px;
+  padding:12px 16px;font-size:13px;color:#7a6030;margin-bottom:12px;cursor:pointer;
+  font-weight:600}
+
+/* TRANSFER SCREEN */
+.tf-wrap{display:flex;flex-direction:column;position:absolute;top:0;left:0;right:0;bottom:calc(118px + env(safe-area-inset-bottom,0px))}
+.tf-top{background:linear-gradient(135deg,#0f1e3d,#1a3a6e);flex-shrink:0;
+  padding:52px 20px 12px;border-bottom:none}
+.tf-rlbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(160,200,255,.6);margin-bottom:8px;
+  display:flex;justify-content:space-between;align-items:center}
+.tf-rbadge{font-size:11px;font-weight:700;color:#fff;background:rgba(255,255,255,.2);
+  padding:3px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.3)}
+.tf-rflag{font-size:32px;line-height:1}
+.tf-rcountry{font-size:18px;font-weight:800;color:#fff}
+.tf-rcode{font-size:10px;font-family:monospace;color:rgba(255,255,255,.45);margin-top:2px}
+.tf-rperson{font-size:13px;font-weight:700;color:#FFB612;margin-top:6px;
+  background:rgba(255,182,18,.15);border:1px solid rgba(255,182,18,.4);
+  border-radius:8px;padding:5px 10px;display:none}
+.tf-ramt{font-size:40px;font-weight:800;font-family:monospace;color:#fff;
+  letter-spacing:-1.5px;margin-top:8px;line-height:1}
+/* AD BANNER */
+.adban{margin:8px 0 2px;border-radius:14px;height:64px;display:flex;
+  align-items:center;gap:12px;padding:0 14px;cursor:pointer;position:relative;
+  border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08)}
+.adban-dot{position:absolute;top:5px;right:8px;font-size:9px;
+  color:rgba(255,255,255,.3);letter-spacing:1px}
+.adban-logo{width:36px;height:36px;border-radius:10px;display:flex;
+  align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+  background:rgba(255,255,255,.15)}
+.adban-t{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.adban-s{font-size:11px;color:rgba(255,255,255,.55);margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.adban-cta{flex-shrink:0;padding:6px 12px;border-radius:8px;
+  font-size:11px;font-weight:700;white-space:nowrap;
+  background:rgba(255,255,255,.2);color:#fff;border:none;cursor:pointer}
+/* DIVIDER */
+.tf-div{height:5px;flex-shrink:0;
+  background:linear-gradient(90deg,transparent,#1a7fd4 30%,#FFB612 50%,#1a7fd4 70%,transparent)}
+.tf-dlbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:#fff;border:2px solid #1a7fd4;border-radius:20px;
+  padding:3px 14px;font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  color:#1a7fd4;white-space:nowrap;font-family:monospace;font-weight:700}
+/* SENDING PANEL */
+.tf-bot{background:#fff;flex:1;min-height:0;display:flex;flex-direction:column}
+.tf-shead{padding:14px 16px 6px;display:flex;justify-content:space-between;
+  align-items:flex-start;flex-shrink:0;border-bottom:1px solid #f0f2f7}
+.tf-slbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  color:#9aa3b5;font-weight:700}
+.tf-scountry{font-size:16px;font-weight:800;color:#1a1a2e}
+.tf-scode{font-size:10px;font-family:monospace;color:#9aa3b5;margin-top:2px}
+.tf-samt{font-size:36px;font-weight:800;font-family:monospace;
+  color:#1a1a2e;letter-spacing:-1.5px;line-height:1}
+.tf-rate{font-size:11px;font-family:monospace;color:#27ae60;
+  margin-top:2px;text-align:right;font-weight:600}
+.noteslist{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:8px 0 4px;background:#f5f7ff}
+.noteslist::-webkit-scrollbar{display:none}
+/* NOTE CARDS — colourful and bold */
+.nc{display:flex;align-items:center;margin:0 14px 10px;border-radius:14px;
+  overflow:hidden;border:none;box-shadow:0 3px 12px rgba(0,0,0,.12)}
+.nbtn{width:54px;flex-shrink:0;height:68px;display:flex;align-items:center;
+  justify-content:center;font-size:32px;cursor:pointer;
+  border:none;font-family:-apple-system,sans-serif}
+.nbtn.m{background:rgba(0,0,0,.18);color:rgba(255,255,255,.9)}
+.nbtn.m:active{background:rgba(0,0,0,.32)}
+.nbtn.p{background:rgba(255,255,255,.2);color:#fff}
+.nbtn.p:active{background:rgba(255,255,255,.35)}
+.nface{flex:1;height:68px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 16px;position:relative}
+.nden{font-size:32px;font-weight:900;font-family:monospace}
+.nsym{font-size:14px;font-weight:700;opacity:.65}
+.nflag{font-size:22px}
+.nqty{position:absolute;top:6px;right:60px;background:rgba(0,0,0,.55);
+  border-radius:10px;padding:3px 9px;font-size:12px;font-weight:700;
+  color:#fff;opacity:0;transition:opacity .15s}
+.nqty.show{opacity:1}
+/* SEND BAR */
+.tf-bar{flex-shrink:0;padding:10px 16px 12px;background:#fff;border-top:1px solid #e8edf5}
+.tf-barmeta{display:flex;justify-content:space-between;
+  font-size:12px;color:#7a8499;margin-bottom:10px;font-weight:600}
+
+/* TX DETAIL POPUP */
+.popup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,20,.6);z-index:80;flex-direction:column;
+  align-items:center;justify-content:center;padding:28px}
+.popup.show{display:flex}
+.popup-card{background:#fff;border-radius:24px;padding:24px;
+  width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.pdr{display:flex;justify-content:space-between;align-items:center;
+  padding:11px 0;border-bottom:1px solid #f0f2f7}
+.pdr:last-child{border:none}
+.pdl{font-size:12px;color:#9aa3b5;font-weight:600}
+.pdv{font-size:13px;font-weight:700;text-align:right;max-width:55%;color:#1a1a2e}
+
+/* SHEET */
+.sheetbg{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:60}
+.sheetbg.show{display:block}
+.sheet{position:fixed;bottom:0;left:0;right:0;background:#fff;
+  border-radius:28px 28px 0 0;border-top:none;
+  padding:0 20px;padding-bottom:max(36px,calc(env(safe-area-inset-bottom,0px)+20px));
+  z-index:61;box-shadow:0 -8px 40px rgba(0,0,0,.15)}
+.shhdl{width:40px;height:4px;background:#e0e6f0;border-radius:2px;margin:14px auto 20px}
+
+/* OVERLAYS */
+.ov{display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,20,.7);z-index:90;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;padding:32px;text-align:center}
+.ov.show{display:flex}
+.ov-ico{font-size:56px}
+.ov-title{font-size:26px;font-weight:800;color:#fff}
+.ov-body{font-size:14px;color:rgba(255,255,255,.65);line-height:1.7}
+
+/* COMPLETE SCREEN */
+.comp-card{background:#fff;border-radius:20px;padding:18px 20px;
+  width:100%;margin-top:6px;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(88px + env(safe-area-inset-bottom,0px));
+  left:50%;transform:translateX(-50%);
+  background:#1a1a2e;border-radius:12px;
+  padding:12px 22px;font-size:13px;font-weight:600;color:#fff;
+  white-space:nowrap;opacity:0;transition:opacity .25s;z-index:200;pointer-events:none;
+  box-shadow:0 4px 20px rgba(0,0,0,.25)}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="s-splash" class="screen active">
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;background:radial-gradient(ellipse at 70% 10%,rgba(26,127,212,.12),transparent 60%),#060810">
+    <div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:rgba(240,236,224,.28);margin-bottom:10px">WELCOME TO</div>
+    <div class="logo" style="font-size:80px"><span class="t">T</span><span class="a">A</span><span class="p">P</span></div>
+    <div style="display:flex;height:5px;border-radius:3px;overflow:hidden;width:150px;margin:14px 0 18px">
+      <div style="flex:2;background:#000"></div><div style="flex:1;background:#FFB612"></div>
+      <div style="flex:3;background:#1a7fd4"></div><div style="flex:1;background:#fff"></div>
+      <div style="flex:2;background:#DE3831"></div><div style="flex:2;background:#002395"></div>
+    </div>
+    <div style="font-size:15px;color:rgba(240,236,224,.45);text-align:center;line-height:1.6">Transfer Across People<br>Send money home, instantly.</div>
+  </div>
+  <div style="position:absolute;left:20px;right:20px;bottom:max(40px,calc(env(safe-area-inset-bottom,0px)+28px))">
+    <button class="btn" onclick="go('s-register')">Create Account</button>
+    <button class="btn" style="background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.3);color:#fff;box-shadow:none" onclick="demoLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div id="s-register" class="screen">
+  <div class="pad">
+    <h2>Create Account</h2><div class="sub">Step 1 of 4</div>
+    <div class="lbl">First Name</div><input class="field" id="reg-fname" type="text" placeholder="e.g. Amara">
+    <div class="lbl">Last Name</div><input class="field" type="text" placeholder="e.g. Jallow">
+    <div class="lbl">Date of Birth</div><input class="field" type="date">
+    <div class="lbl">Phone Number</div><input class="field" id="reg-phone" type="tel" placeholder="+44 7700 900123">
+    <div class="lbl">Email</div><input class="field" type="email" placeholder="you@example.com">
+    <div class="lbl">Password</div><input class="field" type="password" placeholder="Min. 8 characters" style="margin-bottom:24px">
+    <button class="btn" onclick="goOtp()">Continue</button>
+  </div>
+  <div class="bottom-bar"><button class="back-bar-btn" onclick="goBack()">&#8592; Back</button></div>
+  <div class="bnav"><div class="bni" onclick="go('s-home')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div><div class="bni" onclick="go('s-topup')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div><div class="bni" onclick="go('s-drum')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div><div class="bni" onclick="go('s-history')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div><div class="bni" onclick="go('s-profile')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div></div>
+</div>
+
+<!-- OTP -->
+<div id="s-otp" class="screen">
+  <div class="pad">
+    <h2>Verify Phone</h2>
+    <div class="sub">Code sent to <span id="otp-phone" style="color:#f0ece0;font-weight:600"></span></div>
+    <div class="otp-boxes">
+      <div class="ob" id="ob0">&#183;</div><div class="ob" id="ob1">&#183;</div><div class="ob" id="ob2">&#183;</div>
+      <div class="ob" id="ob3">&#183;</div><div class="ob" id="ob4">&#183;</div><div class="ob" id="ob5">&#183;</div>
+    </div>
+    <div style="text-align:center;font-size:13px;color:rgba(240,236,224,.3);margin-bottom:18px">Demo code: <strong style="color:#7dd3fc;font-family:monospace">123456</strong></div>
+    <div class="kpad">
+      <button class="kbtn" onclick="otpKey('1')">1</button><button class="kbtn" onclick="otpKey('2')">2</button><button class="kbtn" onclick="otpKey('3')">3</button>
+      <button class="kbtn" onclick="otpKey('4')">4</button><button class="kbtn" onclick="otpKey('5')">5</button><button class="kbtn" onclick="otpKey('6')">6</button>
+      <button class="kbtn" onclick="otpKey('7')">7</button><button class="kbtn" onclick="otpKey('8')">8</button><button class="kbtn" onclick="otpKey('9')">9</button>
+      <button class="kbtn" style="visibility:hidden"></button><button class="kbtn" onclick="otpKey('0')">0</button><button class="kbtn" onclick="otpKey('del')">&#9003;</button>
+    </div>
+  </div>
+  <div class="bottom-bar"><button class="back-bar-btn" onclick="goBack()">&#8592; Back</button></div>
+  <div class="bnav"><div class="bni" onclick="go('s-home')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div><div class="bni" onclick="go('s-topup')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div><div class="bni" onclick="go('s-drum')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div><div class="bni" onclick="go('s-history')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div><div class="bni" onclick="go('s-profile')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div></div>
+</div>
+
+<!-- ID -->
+<div id="s-id" class="screen">
+  <div class="pad">
+    <h2>Verify Identity</h2><div class="sub">Step 3 of 4 &#8212; one time only</div>
+    <div class="lbl">Document Type</div>
+    <select class="field" style="margin-bottom:14px"><option>Passport</option><option>National ID</option><option>Driving Licence</option></select>
+    <div class="lbl">Upload Document</div>
+    <div class="uz" id="uz" onclick="doUpload()">
+      <div style="font-size:30px;margin-bottom:8px">&#128196;</div>
+      <div style="font-size:14px;font-weight:600" id="uztitle">Tap to upload document</div>
+      <div style="font-size:12px;color:rgba(240,236,224,.3);margin-top:4px">JPG, PNG or PDF</div>
+    </div>
+    <div id="upok" style="font-size:12px;color:#7dd3fc;margin:6px 0 14px;display:none">&#10003; Document uploaded</div>
+    <div class="lbl">Selfie / Liveness Check</div>
+    <div class="cambox">
+      <div id="camlive" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="width:120px;height:145px;border:2.5px solid rgba(26,127,212,.6);border-radius:50%"></div>
+        <div style="font-size:12px;color:rgba(240,236,224,.35)">Centre your face</div>
+      </div>
+      <div id="camdone" style="display:none;flex-direction:column;align-items:center;gap:8px">
+        <div style="font-size:38px">&#9989;</div>
+        <div style="font-size:13px;color:#7dd3fc">Liveness passed</div>
+      </div>
+    </div>
+    <button class="btn ghost" style="margin-bottom:14px" onclick="doSelfie()">Capture Selfie</button>
+    <button class="btn" onclick="go('s-complete')">Submit for Review</button>
+  </div>
+  <div class="bottom-bar"><button class="back-bar-btn" onclick="goBack()">&#8592; Back</button></div>
+  <div class="bnav"><div class="bni" onclick="go('s-home')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div><div class="bni" onclick="go('s-topup')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div><div class="bni" onclick="go('s-drum')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div><div class="bni" onclick="go('s-history')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div><div class="bni" onclick="go('s-profile')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div></div>
+</div>
+
+<!-- COMPLETE -->
+<div id="s-complete" class="screen">
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;gap:14px">
+    <div style="font-size:58px">&#127881;</div>
+    <div class="logo" style="font-size:32px"><span class="t">T</span><span class="a">A</span><span class="p">P</span></div>
+    <div style="font-size:22px;font-weight:800">You're all set!</div>
+    <div style="font-size:14px;color:rgba(240,236,224,.45);line-height:1.7">ID verified within <strong style="color:#7dd3fc">1-2 hours</strong>.<br>You can top up and send now.</div>
+    <div style="background:#18181f;border:1px solid rgba(26,127,212,.35);border-radius:14px;padding:16px 20px;width:100%">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(100,190,255,.4);margin-bottom:4px">TAP WALLET ID</div>
+      <div style="font-family:monospace;font-size:18px;color:#7dd3fc;letter-spacing:2px">TAP-2847-3901</div>
+    </div>
+    <button class="btn" onclick="go('s-home')">Go to My Wallet</button>
+  </div>
+  <div class="bnav"><div class="bni" onclick="go('s-home')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div><div class="bni" onclick="go('s-topup')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div><div class="bni" onclick="go('s-drum')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div><div class="bni" onclick="go('s-history')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div><div class="bni" onclick="go('s-profile')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div></div>
+</div>
+
+<!-- HOME -->
+<div id="s-home" class="screen">
+  <div class="pad hb">
+    <div class="wcard" id="wcard">
+      <div class="wbar">
+        <div style="flex:2;background:#000"></div><div style="flex:1;background:#FFB612"></div>
+        <div style="flex:3;background:#1a7fd4"></div><div style="flex:1;background:#fff"></div>
+        <div style="flex:2;background:#DE3831"></div><div style="flex:2;background:#002395"></div>
+      </div>
+      <div id="wcmain">
+        <div class="wlbl">TAP WALLET BALANCE</div>
+        <div class="wbal"><span class="wsym">&#163;</span><span id="wbal">250</span><span class="wcts">.<span id="wbcts">00</span></span></div>
+        <div class="wsub" id="wsub">Balance available to send</div>
+        <div class="wacts">
+          <button class="wbtn wadd" onclick="go('s-topup')">+ Add Money</button>
+          <button class="wbtn wsend" onclick="go('s-drum')">&#8599; Send</button>
+          <button class="wbtn wqr" onclick="toggleQR()">&#9638;</button>
+        </div>
+      </div>
+      <div class="qrpanel" id="qrpanel">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(100,190,255,.45)">WITHDRAW / RECEIVE</div>
+        <div id="qrsvg"></div>
+        <div style="font-family:monospace;font-size:12px;color:rgba(240,236,224,.5)">TAP-2847-3901</div>
+        <div style="font-size:11px;color:rgba(240,236,224,.3);text-align:center;padding:0 20px;line-height:1.5">Show at any TAP outlet to withdraw</div>
+        <div style="font-size:12px;color:#7dd3fc">&#163;<span id="qrbal">250.00</span></div>
+        <button onclick="toggleQR()" style="margin-top:6px;padding:10px 32px;border-radius:12px;background:#fff;border:none;font-size:14px;font-weight:800;color:#0f1e3d;cursor:pointer;font-family:-apple-system,sans-serif;letter-spacing:.3px">Close</button>
+      </div>
+    </div>
+    <div class="shdr"><div class="stitle">Send To</div><div class="slink" onclick="showSheet()">+ Add New</div></div>
+    <div class="rgrid" id="rgrid"></div>
+    <div class="shdr" style="margin-top:18px"><div class="stitle">Recent Activity</div><div class="slink">See All</div></div>
+    <div id="txlist"></div>
+  </div>
+  <div class="bnav">
+    <div class="bni on"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div>
+    <div class="bni" onclick="go('s-topup')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div>
+    <div class="bni" onclick="go('s-drum')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div>
+    <div class="bni" onclick="go('s-history')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div>
+    <div class="bni" onclick="go('s-profile')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div>
+  </div>
+  <!-- TX Detail -->
+  <div class="popup" id="txpopup">
+    <div class="popup-card">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:32px">&#8599;</div>
+        <div style="font-size:17px;font-weight:700;margin-top:6px" id="poptitle"></div>
+        <div style="font-size:26px;font-weight:800;font-family:monospace;margin-top:4px;color:#e74c3c" id="popamt"></div>
+      </div>
+      <div class="pdr"><span class="pdl">Receiver</span><span class="pdv" id="poprecv"></span></div>
+      <div class="pdr"><span class="pdl">Phone</span><span class="pdv" id="popph"></span></div>
+      <div class="pdr"><span class="pdl">They received</span><span class="pdv" id="popcv"></span></div>
+      <div class="pdr"><span class="pdl">Date</span><span class="pdv" id="popdate"></span></div>
+    </div>
+    <button class="btn ghost" style="max-width:300px;margin-top:14px" onclick="document.getElementById('txpopup').classList.remove('show')">Close</button>
+  </div>
+  <!-- Add Receiver Sheet -->
+  <div class="sheetbg" id="sheetbg" onclick="hideSheet()"></div>
+  <div class="sheet" id="sheet" style="display:none">
+    <div class="shhdl"></div>
+    <h2 style="margin-bottom:4px">Add Receiver</h2>
+    <div class="sub">Who are you sending to?</div>
+    <div class="lbl">Full Name</div><input class="field" id="nr-name" type="text" placeholder="e.g. Fatou Jallow">
+    <div class="lbl" style="margin-top:12px">Country</div>
+    <select class="field" id="nr-country">
+      <option value="">Select country...</option>
+      <option value="NGN">&#127475;&#127468; Nigeria</option>
+      <option value="SLL">&#127480;&#127473; Sierra Leone</option>
+      <option value="GHS">&#127468;&#127469; Ghana</option>
+      <option value="GMD">&#127468;&#127474; Gambia</option>
+      <option value="KES">&#127472;&#127466; Kenya</option>
+      <option value="ZAR">&#127487;&#127462; South Africa</option>
+      <option value="ZWL">&#127487;&#127484; Zimbabwe</option>
+    </select>
+    <div class="lbl" style="margin-top:12px">Phone / Account</div>
+    <input class="field" id="nr-phone" type="tel" placeholder="+220 990 1234" style="margin-bottom:20px">
+    <button class="btn" onclick="saveReceiver()">Save Receiver</button>
+    <button class="btn ghost" style="margin-top:10px" onclick="hideSheet()">Cancel</button>
+  </div>
+</div>
+
+<!-- TOP-UP -->
+<div id="s-topup" class="screen">
+  <div class="pad">
+    <a class="back" onclick="go('s-home')">&#8592;</a>
+    <h2>Add Money</h2><div class="sub">Fund your TAP wallet</div>
+    <div style="text-align:center;padding:14px 0 18px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:18px">
+      <div style="font-size:14px;color:rgba(240,236,224,.3)">&#163;</div>
+      <input class="amtbig" id="topupamt" type="number" placeholder="0">
+      <div class="pills">
+        <button class="pill" onclick="setAmt(20)">&#163;20</button>
+        <button class="pill" onclick="setAmt(50)">&#163;50</button>
+        <button class="pill" onclick="setAmt(100)">&#163;100</button>
+        <button class="pill" onclick="setAmt(200)">&#163;200</button>
+        <button class="pill" onclick="setAmt(500)">&#163;500</button>
+      </div>
+    </div>
+    <div class="mc" onclick="pickMethod('ob')"><div class="mcic">&#127968;</div><div><div class="mct">Open Banking</div><div class="mcs">Connect bank instantly &#8226; Free</div></div></div>
+    <div class="mc" onclick="pickMethod('tr')"><div class="mcic">&#128179;</div><div><div class="mct">Bank Transfer</div><div class="mcs">Faster Payments &#8226; 1-2 hours</div></div></div>
+    <div class="mc" onclick="pickMethod('card')"><div class="mcic">&#128179;</div><div><div class="mct">Debit / Credit Card</div><div class="mcs">Visa, Mastercard &#8226; Instant &#8226; 0.5% fee</div></div></div>
+  </div>
+  <div class="bottom-bar"><button class="back-bar-btn" onclick="goBack()">&#8592; Back</button></div>
+  <div class="bnav"><div class="bni" onclick="go('s-home')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div><div class="bni on"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div><div class="bni" onclick="go('s-drum')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div><div class="bni" onclick="go('s-history')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div><div class="bni" onclick="go('s-profile')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div></div>
+</div>
+
+<!-- TOP-UP: TRANSFER -->
+<div id="s-topup-tr" class="screen">
+  <div class="pad">
+    <a class="back" onclick="go('s-topup')">&#8592;</a>
+    <h2>Bank Transfer</h2><div class="sub">Send to us with your reference</div>
+    <div style="background:#18181f;border-radius:14px;padding:16px;margin-bottom:14px">
+      <div class="bdr"><span>Bank</span><span class="bdrv">TAP Payments Ltd</span></div>
+      <div class="bdr"><span>Sort Code</span><span class="bdrv">20-47-81</span></div>
+      <div class="bdr"><span>Account No.</span><span class="bdrv">83920174</span></div>
+      <div class="bdr" style="border:none"><span>IBAN</span><span class="bdrv" style="font-size:11px">GB29 NWBK 2047 8183 9201 74</span></div>
+    </div>
+    <div style="font-size:13px;color:rgba(240,236,224,.38);margin-bottom:8px">Your unique reference (must include):</div>
+    <div class="refbox"><div class="refcode">TAP-2847-3901</div><button class="cpbtn" onclick="showToast('Copied!')">Copy</button></div>
+    <div style="background:rgba(26,127,212,.07);border:1px solid rgba(26,127,212,.2);border-radius:12px;padding:14px;font-size:13px;color:rgba(240,236,224,.45);line-height:1.7;margin-bottom:20px">
+      Send <strong style="color:#7dd3fc" id="tramt">&#163;0.00</strong> with the reference. Credited within 1-2 hours.
+    </div>
+    <button class="btn" onclick="topupDone()">I've Made the Transfer</button>
+  </div>
+  <div class="bottom-bar"><button class="back-bar-btn" onclick="goBack()">&#8592; Back</button></div>
+  <div class="bnav"><div class="bni" onclick="go('s-home')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div><div class="bni on"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div><div class="bni" onclick="go('s-drum')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div><div class="bni" onclick="go('s-history')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div><div class="bni" onclick="go('s-profile')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div></div>
+</div>
+
+<!-- TOP-UP: CARD -->
+<div id="s-topup-card" class="screen">
+  <div class="pad">
+    <a class="back" onclick="go('s-topup')">&#8592;</a>
+    <h2>Card Payment</h2>
+    <div style="text-align:center;margin-bottom:22px">
+      <div style="font-size:13px;color:rgba(240,236,224,.3)">Charging</div>
+      <div style="font-size:42px;font-weight:800;color:#7dd3fc" id="cardamt">&#163;0.00</div>
+      <div style="font-size:11px;color:rgba(240,236,224,.28)">incl. 0.5% card fee</div>
+    </div>
+    <div class="lbl">Card Number</div><input class="field" type="tel" placeholder="1234 5678 9012 3456">
+    <div style="display:flex;gap:10px;margin-top:0"><input class="field" type="tel" placeholder="MM/YY" style="flex:1"><input class="field" type="tel" placeholder="CVV" style="flex:1"></div>
+    <div class="lbl" style="margin-top:12px">Name on Card</div><input class="field" type="text" placeholder="AMARA JALLOW" style="margin-bottom:18px">
+    <div style="background:#18181f;border-radius:10px;padding:12px;font-size:12px;color:rgba(240,236,224,.3);margin-bottom:16px">&#128274; Encrypted. Card details never stored.</div>
+    <button class="btn" onclick="topupDone()">Pay Now</button>
+  </div>
+  <div class="bottom-bar"><button class="back-bar-btn" onclick="goBack()">&#8592; Back</button></div>
+  <div class="bnav"><div class="bni" onclick="go('s-home')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div><div class="bni on"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div><div class="bni" onclick="go('s-drum')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div><div class="bni" onclick="go('s-history')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div><div class="bni" onclick="go('s-profile')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div></div>
+</div>
+
+<!-- DRUM PICKER -->
+<div id="s-drum" class="screen" style="background:#f5f7ff">
+  <div class="pad" style="padding-bottom:20px">
+    <a class="back" onclick="go('s-home')">&#8592;</a>
+    <h2>Send Money</h2><div class="sub">Scroll to choose destination</div>
+    <div style="display:flex;background:#18181f;border-radius:12px;padding:4px;margin-bottom:16px;gap:0">
+      <button id="tab-gbp" style="flex:1;height:38px;border-radius:8px;border:none;font-size:13px;font-weight:600;background:#1a7fd4;color:#fff;font-family:-apple-system,sans-serif" onclick="setSendCur('GBP')">&#127468;&#127463; GBP</button>
+      <button id="tab-usd" style="flex:1;height:38px;border-radius:8px;border:none;font-size:13px;font-weight:600;background:transparent;color:rgba(240,236,224,.38);font-family:-apple-system,sans-serif" onclick="setSendCur('USD')">&#127482;&#127480; USD</button>
+    </div>
+    <div class="drum-wrap" id="drum-wrap">
+      <div class="drum-fade t"></div>
+      <div class="drum-sel"></div>
+      <div class="drum-list" id="drum-list"></div>
+      <div class="drum-fade b"></div>
+    </div>
+    <div class="selinfo" id="selinfo">
+      <div class="selflag" id="selflag">&#127475;&#127468;</div>
+      <div><div class="selname" id="selname">Nigeria</div><div class="selsub" id="selsub">NGN</div></div>
+    </div>
+    <div id="drumrecv"></div>
+    <button class="btn" id="drumsend" onclick="launchTransfer()">Send</button>
+  </div>
+  <div class="bottom-bar"><button class="back-bar-btn" onclick="goBack()">&#8592; Back</button></div>
+  <div class="bnav"><div class="bni" onclick="go('s-home')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div><div class="bni" onclick="go('s-topup')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div><div class="bni on"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div><div class="bni" onclick="go('s-history')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div><div class="bni" onclick="go('s-profile')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div></div>
+</div>
+
+<!-- TRANSFER -->
+<div id="s-transfer" class="screen">
+  <div class="tf-wrap">
+    <div class="tf-top">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <a style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);font-size:18px;cursor:pointer;text-decoration:none;color:#fff" onclick="go('s-drum')">&#8592;</a>
+        <div class="logo" style="font-size:20px"><span class="t">T</span><span class="a">A</span><span class="p">P</span></div>
+      </div>
+      <div class="tf-rlbl">
+        <span>&#8593; RECEIVING</span>
+        <div class="tf-rbadge" id="tfrbadge" style="display:none"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div class="tf-rflag" id="tfrflag"></div>
+        <div><div class="tf-rcountry" id="tfrcountry"></div><div class="tf-rcode" id="tfrcode"></div></div>
+      </div>
+      <div class="tf-rperson" id="tfrperson"></div>
+      <div class="tf-ramt"><span id="tfrsym"></span><span id="tfrint">0</span>.<span id="tfrdec">00</span></div>
+      <div class="adban" id="adban" onclick="nextAd()">
+        <div class="adban-dot">AD</div>
+        <div class="adban-logo" id="adlogo">&#127758;</div>
+        <div style="flex:1;min-width:0"><div class="adban-t" id="adtitle">TAP Pro &#8212; Zero fees on first 3 transfers</div><div class="adban-s" id="adsub">Send money faster</div></div>
+        <button class="adban-cta" id="adcta">Learn More</button>
+      </div>
+    </div>
+    <div class="tf-div"><div class="tf-dlbl">use &#8722; and + to set quantities</div></div>
+    <div class="tf-bot">
+      <div class="tf-shead">
+        <div>
+          <div class="tf-slbl">&#8595; SENDING</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+            <div style="font-size:26px" id="tfsflag"></div>
+            <div><div class="tf-scountry" id="tfscountry"></div><div class="tf-scode" id="tfscode"></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="tf-samt"><span id="tfssym"></span><span id="tfsint">0</span>.<span id="tfsdec">00</span></div>
+          <div class="tf-rate" id="tfrate"></div>
+        </div>
+      </div>
+      <div class="noteslist" id="noteslist"></div>
+    </div>
+    <div class="tf-bar">
+      <div class="tf-barmeta"><span>Wallet: <span style="color:#7dd3fc" id="tfwbal">&#163;250.00</span></span><span>Fee: &#163;1.99</span></div>
+      <button class="btn" onclick="confirmSend()">&#9992; Confirm &amp; Send</button>
+    </div>
+  </div>
+  <div class="bottom-bar"><button class="back-bar-btn" onclick="goBack()">&#8592; Back</button></div>
+  <div class="bnav"><div class="bni" onclick="go('s-home')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div><div class="bni" onclick="go('s-topup')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div><div class="bni on"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div><div class="bni" onclick="go('s-history')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div><div class="bni" onclick="go('s-profile')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div></div>
+</div>
+
+
+<!-- HISTORY -->
+<div id="s-history" class="screen">
+  <div class="pad" style="padding-bottom:calc(90px + env(safe-area-inset-bottom,20px))">
+    <h2>Transaction History</h2>
+    <div class="sub">All your sends and top-ups</div>
+    <!-- Filter pills -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px">
+      <button class="pill" id="filt-all"   onclick="filterTx('all')"    style="background:#1a7fd4;color:#fff;border-color:#1a7fd4">All</button>
+      <button class="pill" id="filt-out"   onclick="filterTx('out')">Sent</button>
+      <button class="pill" id="filt-in"    onclick="filterTx('in')">Top-Ups</button>
+    </div>
+    <div id="hist-list"></div>
+  </div>
+  <div class="bottom-bar"><button class="back-bar-btn" onclick="goBack()">&#8592; Back</button></div>
+  <div class="bnav"><div class="bni" onclick="go('s-home')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div><div class="bni" onclick="go('s-topup')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div><div class="bni" onclick="go('s-drum')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div><div class="bni on"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div><div class="bni" onclick="go('s-profile')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div></div>
+</div>
+
+<!-- PROFILE -->
+<div id="s-profile" class="screen">
+  <div class="pad" style="padding-bottom:calc(90px + env(safe-area-inset-bottom,20px))">
+    <!-- Avatar -->
+    <div style="display:flex;flex-direction:column;align-items:center;padding:20px 0 28px">
+      <div style="width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#1a7fd4,#FFB612);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;color:#fff;margin-bottom:14px">A</div>
+      <div style="font-size:22px;font-weight:800;color:#1a1a2e">Amara Jallow</div>
+      <div style="font-family:monospace;font-size:13px;color:#1a7fd4;margin-top:4px;background:#f0f7ff;padding:4px 14px;border-radius:20px;border:1px solid #c8dff8">TAP-2847-3901</div>
+      <div style="font-size:12px;color:#9aa3b5;margin-top:6px">Verified &#10003;</div>
+    </div>
+    <!-- Stats row -->
+    <div style="display:flex;gap:10px;margin-bottom:24px">
+      <div style="flex:1;background:#fff;border-radius:16px;padding:16px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid #e8edf5">
+        <div style="font-size:22px;font-weight:800;color:#1a7fd4" id="prof-sent">0</div>
+        <div style="font-size:11px;color:#9aa3b5;margin-top:4px;font-weight:600">TOTAL SENT</div>
+      </div>
+      <div style="flex:1;background:#fff;border-radius:16px;padding:16px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid #e8edf5">
+        <div style="font-size:22px;font-weight:800;color:#27ae60" id="prof-topups">0</div>
+        <div style="font-size:11px;color:#9aa3b5;margin-top:4px;font-weight:600">TOP-UPS</div>
+      </div>
+      <div style="flex:1;background:#fff;border-radius:16px;padding:16px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid #e8edf5">
+        <div style="font-size:22px;font-weight:800;color:#FFB612" id="prof-recvs">0</div>
+        <div style="font-size:11px;color:#9aa3b5;margin-top:4px;font-weight:600">RECEIVERS</div>
+      </div>
+    </div>
+    <!-- Settings list -->
+    <div style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid #e8edf5;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid #f0f2f7;cursor:pointer" onclick="showToast('Personal Details — coming soon')">
+        <div style="width:40px;height:40px;border-radius:12px;background:#f0f7ff;display:flex;align-items:center;justify-content:center;font-size:20px">&#128100;</div>
+        <div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1a1a2e">Personal Details</div><div style="font-size:12px;color:#9aa3b5;margin-top:2px">Name, DOB, phone</div></div>
+        <div style="color:#9aa3b5;font-size:18px">&#8250;</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid #f0f2f7;cursor:pointer" onclick="showToast('Security settings — coming soon')">
+        <div style="width:40px;height:40px;border-radius:12px;background:#f0fff8;display:flex;align-items:center;justify-content:center;font-size:20px">&#128274;</div>
+        <div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1a1a2e">Security</div><div style="font-size:12px;color:#9aa3b5;margin-top:2px">Password, biometrics</div></div>
+        <div style="color:#9aa3b5;font-size:18px">&#8250;</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid #f0f2f7;cursor:pointer" onclick="showToast('Notifications — coming soon')">
+        <div style="width:40px;height:40px;border-radius:12px;background:#fff8ee;display:flex;align-items:center;justify-content:center;font-size:20px">&#128276;</div>
+        <div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1a1a2e">Notifications</div><div style="font-size:12px;color:#9aa3b5;margin-top:2px">Alerts and updates</div></div>
+        <div style="color:#9aa3b5;font-size:18px">&#8250;</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;padding:16px;cursor:pointer" onclick="showToast('Help and Support — coming soon')">
+        <div style="width:40px;height:40px;border-radius:12px;background:#f5f0ff;display:flex;align-items:center;justify-content:center;font-size:20px">&#128218;</div>
+        <div style="flex:1"><div style="font-size:14px;font-weight:700;color:#1a1a2e">Help &amp; Support</div><div style="font-size:12px;color:#9aa3b5;margin-top:2px">FAQs, contact us</div></div>
+        <div style="color:#9aa3b5;font-size:18px">&#8250;</div>
+      </div>
+    </div>
+    <button class="btn" style="background:linear-gradient(135deg,#e74c3c,#c0392b);box-shadow:0 4px 16px rgba(231,76,60,.25)" onclick="signOut()">Sign Out</button>
+  </div>
+  <div class="bnav">
+    <div class="bni" onclick="go('s-home')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div>
+    <div class="bni" onclick="go('s-topup')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div>
+    <div class="bni" onclick="go('s-drum')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div>
+    <div class="bni" onclick="go('s-history')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div>
+    <div class="bni on"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div>
+  </div>
+  <div class="bottom-bar"><button class="back-bar-btn" onclick="goBack()">&#8592; Back</button></div>
+  <div class="bnav"><div class="bni" onclick="go('s-home')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div></div><div class="bni" onclick="go('s-topup')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</div></div><div class="bni" onclick="go('s-drum')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div></div><div class="bni" onclick="go('s-history')"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>History</div></div><div class="bni on"><div class="bni-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profile</div></div></div>
+</div>
+
+<!-- OVERLAYS -->
+<div class="ov" id="ov-send">
+  <div class="ov-ico">&#9992;</div>
+  <div class="ov-title">Money Sent!</div>
+  <div class="ov-body" id="ov-send-body"></div>
+  <button class="btn" style="max-width:280px;margin-top:8px" onclick="closeSend()">Back to Wallet</button>
+</div>
+<div class="ov" id="ov-topup">
+  <div class="ov-ico">&#10003;</div>
+  <div class="ov-title">Money Added!</div>
+  <div class="ov-body" id="ov-topup-body"></div>
+  <button class="btn" style="max-width:280px;margin-top:8px" onclick="closeTopup()">View Wallet</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var walletBal=250,sendCur='GBP',recvCty=null,selRecv=-1,sendCnts={},otpVal='',topupAmt=0,qrOn=false,drumIdx=0,curScreen='s-splash';
+var CTYS=[
+  {code:'NGN',name:'Nigeria',     flag:'&#127475;&#127468;',sym:'&#8358;', rate:2050,  denoms:[1000,500,200,100,50], cols:['#1a3a7a','#7a3500','#3a7a20','#8b1a00','#005a7a']},
+  {code:'SLL',name:'Sierra Leone',flag:'&#127480;&#127473;',sym:'Le',      rate:27500, denoms:[50000,20000,10000,5000,2000],cols:['#004d20','#003580','#7a0000','#7a5500','#004d7a']},
+  {code:'GHS',name:'Ghana',       flag:'&#127468;&#127469;',sym:'&#8373;', rate:19.8,  denoms:[200,100,50,20,10],    cols:['#dc143c','#004d00','#b8860b','#8b0000','#2a5a8a']},
+  {code:'GMD',name:'Gambia',      flag:'&#127468;&#127474;',sym:'D',       rate:105.4, denoms:[200,100,50,25,10],    cols:['#cc0000','#004080','#2a7a20','#7a5a00','#5a2a7a']},
+  {code:'KES',name:'Kenya',       flag:'&#127472;&#127466;',sym:'KSh',     rate:173.5, denoms:[1000,500,200,100,50], cols:['#8b0000','#8b4500','#003d00','#003d6b','#5a3500']},
+  {code:'ZAR',name:'S. Africa',   flag:'&#127487;&#127462;',sym:'R',       rate:23.9,  denoms:[200,100,50,20,10],    cols:['#e07000','#003580','#cc0000','#2a7a20','#004d80']},
+  {code:'ZWL',name:'Zimbabwe',    flag:'&#127487;&#127484;',sym:'ZWL',     rate:3800,  denoms:[100,50,20,10,5],      cols:['#1a5c1a','#8b4500','#003d80','#8b0000','#5a3500']},
+];
+var SEND={
+  GBP:{code:'GBP',name:'British Pound',country:'United Kingdom',flag:'&#127468;&#127463;',sym:'&#163;',base:1,denoms:[50,20,10,5],cols:['#9a0000','#7a3800','#c06000','#2a5a2a']},
+  USD:{code:'USD',name:'US Dollar',country:'United States',flag:'&#127482;&#127480;',sym:'$',base:1.26,denoms:[100,50,20,10,5],cols:['#1a4a1a','#1a4a1a','#1a4a1a','#1a4a1a','#1a4a1a']},
+};
+var RECVS=[
+  {name:'Fatou',ini:'FJ',cty:'GMD',ph:'+220 990 1234',last:'D 5,270'},
+  {name:'Chidi',ini:'CO',cty:'NGN',ph:'+234 801 2345',last:'&#8358;61,500'},
+  {name:'Akua', ini:'AB',cty:'GHS',ph:'+233 244 3456',last:'&#8373;396'},
+];
+var TXS=[
+  {tp:'out',ds:'Sent to Gambia',  who:'Fatou',when:'Today 09:14',   am:'-&#163;50.00', cv:'D 5,270.00'},
+  {tp:'in', ds:'Wallet Top-Up',  who:'Bank', when:'Yesterday 18:30',am:'+&#163;200.00',cv:''},
+  {tp:'out',ds:'Sent to Nigeria', who:'Chidi',when:'24 May 11:02',  am:'-&#163;30.00', cv:'&#8358;61,500'},
+  {tp:'out',ds:'Sent to Ghana',   who:'Akua', when:'20 May 08:45',  am:'-&#163;20.00', cv:'&#8373;396.00'},
+];
+var ACOLS=['#7dd3fc','#FFB612','#f87171','#60a5fa','#c084fc','#fb923c'];
+var FLAGS={NGN:'&#127475;&#127468;',SLL:'&#127480;&#127473;',GHS:'&#127468;&#127469;',GMD:'&#127468;&#127474;',KES:'&#127472;&#127466;',ZAR:'&#127487;&#127462;',ZWL:'&#127487;&#127484;'};
+function hcol(n){var h=0;for(var i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))&0x7fffffff;return ACOLS[h%ACOLS.length];}
+var navStack = [];
+
+function go(id){
+  if(id === curScreen) return;
+  // Push current screen onto history stack (don't push splash)
+  if(curScreen && curScreen !== 's-splash') navStack.push(curScreen);
+  showScreen(id);
+}
+
+function goBack(){
+  if(navStack.length === 0){ showScreen('s-home'); return; }
+  var prev = navStack.pop();
+  showScreen(prev);
+}
+
+function showScreen(id){
+  var el=document.getElementById(id);
+  if(!el){ console.log('Screen not found: '+id); return; }
+  var ss=document.querySelectorAll('.screen');
+  for(var i=0;i<ss.length;i++)ss[i].classList.remove('active');
+  el.classList.add('active');
+  el.scrollTop=0;
+  curScreen=id;
+  if(id==='s-home')renderHome();
+  if(id==='s-history')renderHistory('all');
+  if(id==='s-profile')renderProfile();
+  if(id==='s-drum')setTimeout(function(){buildDrum();},60);
+}
+function demoLogin(){walletBal=250;navStack=[];go('s-home');}
+function goOtp(){
+  var ph=document.getElementById('reg-phone').value||'07700 900123';
+  document.getElementById('otp-phone').textContent=ph;
+  otpVal='';
+  for(var i=0;i<6;i++){var b=document.getElementById('ob'+i);b.innerHTML='&#183;';b.classList.remove('f');}
+  go('s-otp');
+}
+function otpKey(k){
+  if(k==='del')otpVal=otpVal.slice(0,-1);
+  else if(otpVal.length<6)otpVal+=k;
+  for(var i=0;i<6;i++){
+    var b=document.getElementById('ob'+i);
+    b.textContent=i<otpVal.length?otpVal[i]:'·';
+    if(i<otpVal.length)b.classList.add('f');else b.classList.remove('f');
+  }
+  if(otpVal==='123456')setTimeout(function(){go('s-id');},300);
+}
+function doUpload(){document.getElementById('uz').classList.add('done');document.getElementById('uztitle').textContent='Document uploaded ✓';document.getElementById('upok').style.display='block';}
+function doSelfie(){document.getElementById('camlive').style.display='none';document.getElementById('camdone').style.display='flex';}
+function makeQR(txt){
+  var s=110,m=8,c=Math.floor(s/m),h=0;
+  for(var i=0;i<txt.length;i++)h=(h*31+txt.charCodeAt(i))&0x7fffffff;
+  var svg='<svg width="'+s+'" height="'+s+'" viewBox="0 0 '+s+' '+s+'" xmlns="http://www.w3.org/2000/svg"><rect width="'+s+'" height="'+s+'" fill="white" rx="6"/>';
+  for(var r=0;r<m;r++)for(var c2=0;c2<m;c2++){
+    var cor=(r<2&&c2<2)||(r<2&&c2>=m-2)||(r>=m-2&&c2<2),bit=cor?1:((h>>(r*m+c2)%30)&1);
+    if(bit)svg+='<rect x="'+(c2*c+2)+'" y="'+(r*c+2)+'" width="'+(c-2)+'" height="'+(c-2)+'" fill="#0b0b0f" rx="1"/>';
+  }
+  var co=[[1,1],[1,m-2],[m-2,1]];
+  for(var ci=0;ci<co.length;ci++){
+    var cr=co[ci][0],cc=co[ci][1];
+    svg+='<rect x="'+(cc*c+3)+'" y="'+(cr*c+3)+'" width="'+(c-4)+'" height="'+(c-4)+'" fill="white" rx="1"/>';
+    svg+='<rect x="'+(cc*c+5)+'" y="'+(cr*c+5)+'" width="'+(c-8)+'" height="'+(c-8)+'" fill="#1a7fd4" rx="1"/>';
+  }
+  return svg+'</svg>';
+}
+function toggleQR(){
+  qrOn=!qrOn;
+  var p=document.getElementById('qrpanel');
+  var m=document.getElementById('wcmain');
+  // Scroll home screen to top so QR card is visible
+  var hs=document.getElementById('s-home');
+  if(hs) hs.scrollTop=0;
+  if(qrOn){
+    // Build QR first so height is correct
+    document.getElementById('qrsvg').innerHTML=makeQR('TAP-2847-3901');
+    document.getElementById('qrbal').textContent=walletBal.toFixed(2);
+    m.style.visibility='hidden';
+    p.classList.add('show');
+  } else {
+    p.classList.remove('show');
+    m.style.visibility='visible';
+  }
+}
+function renderHistory(filter){
+  filter = filter || 'all';
+  var list = document.getElementById('hist-list');
+  if(!list) return;
+  list.innerHTML='';
+  var filtered = TXS.filter(function(t){ return filter==='all' || t.tp===filter; });
+  if(filtered.length===0){
+    list.innerHTML='<div style="text-align:center;padding:40px 0;color:#9aa3b5;font-size:14px">No transactions yet</div>';
+    return;
+  }
+  for(var i=0;i<filtered.length;i++){
+    var t=filtered[i],row=document.createElement('div');row.className='txrow';
+    row.innerHTML='<div class="txic '+t.tp+'">'+(t.tp==='out'?'&#8599;':'+')+'</div>'+
+      '<div style="flex:1"><div class="txname">'+t.ds+'</div><div class="txdate">'+t.who+' &#183; '+t.when+'</div></div>'+
+      '<div><div class="txamt '+t.tp+'">'+t.am+'</div>'+(t.cv?'<div class="txrv">'+t.cv+'</div>':'')+'</div>';
+    if(t.tp==='out'){(function(tx){row.onclick=function(){openTxDetail(tx);};})(t);}
+    list.appendChild(row);
+  }
+}
+
+function filterTx(f){
+  var pills=['filt-all','filt-out','filt-in'];
+  for(var i=0;i<pills.length;i++){
+    var el=document.getElementById(pills[i]);
+    if(el){el.style.background=pills[i]==='filt-'+f?'#1a7fd4':'#fff';el.style.color=pills[i]==='filt-'+f?'#fff':'#1a7fd4';}
+  }
+  renderHistory(f);
+}
+
+function renderProfile(){
+  var sent=TXS.filter(function(t){return t.tp==='out';}).length;
+  var tops=TXS.filter(function(t){return t.tp==='in';}).length;
+  var ps=document.getElementById('prof-sent');if(ps)ps.textContent=sent;
+  var pt=document.getElementById('prof-topups');if(pt)pt.textContent=tops;
+  var pr=document.getElementById('prof-recvs');if(pr)pr.textContent=RECVS.length;
+}
+
+function renderHome(){
+  var p=walletBal.toFixed(2).split('.');
+  document.getElementById('wbal').textContent=parseInt(p[0]).toLocaleString('en-GB');
+  document.getElementById('wbcts').textContent=p[1];
+  var s=0;
+  for(var i=0;i<TXS.length;i++){if(TXS[i].tp==='out'&&TXS[i].when.indexOf('Today')===0){var m=TXS[i].am.replace(/-[^0-9.]*/g,'');s+=parseFloat(m)||0;}}
+  document.getElementById('wsub').textContent=s>0?'Down £'+s.toFixed(2)+' sent today':'Balance available to send';
+  var g=document.getElementById('rgrid');g.innerHTML='';
+  for(var j=0;j<RECVS.length;j++){
+    var r=RECVS[j],col=hcol(r.name),fl=FLAGS[r.cty]||'&#127758;';
+    var el=document.createElement('div');el.className='rchip';
+    el.innerHTML='<div class="rav" style="background:'+col+'22;border-color:'+col+'44;color:'+col+'">'+r.ini+'<div class="rfbadge">'+fl+'</div></div><div class="rname">'+r.name+'</div><div class="rlast">'+(r.last||'')+'</div>';
+    (function(x){el.onclick=function(){quickSend(x);};})(j);
+    g.appendChild(el);
+  }
+  var add=document.createElement('div');add.className='rchip';
+  add.innerHTML='<div class="rav nw" style="color:rgba(100,190,255,.6)">+</div><div class="rname" style="color:rgba(100,190,255,.5)">Add</div><div class="rlast"></div>';
+  add.onclick=showSheet;g.appendChild(add);
+  var tl=document.getElementById('txlist');tl.innerHTML='';
+  for(var k=0;k<TXS.length;k++){
+    var t=TXS[k],row=document.createElement('div');row.className='txrow';
+    row.innerHTML='<div class="txic '+t.tp+'">'+(t.tp==='out'?'&#8599;':'+')+'</div>'+
+      '<div style="flex:1"><div class="txname">'+t.ds+'</div><div class="txdate">'+t.who+' &#183; '+t.when+'</div></div>'+
+      '<div><div class="txamt '+t.tp+'">'+t.am+'</div>'+(t.cv?'<div class="txrv">'+t.cv+'</div>':'')+'</div>';
+    if(t.tp==='out'){(function(tx){row.onclick=function(){openTxDetail(tx);};})(t);}
+    tl.appendChild(row);
+  }
+}
+function openTxDetail(t){
+  var rv=null;for(var i=0;i<RECVS.length;i++){if(RECVS[i].name===t.who){rv=RECVS[i];break;}}
+  document.getElementById('poptitle').textContent=t.ds;
+  document.getElementById('popamt').innerHTML=t.am;
+  document.getElementById('poprecv').textContent=rv?rv.name+' ('+rv.ini+')':t.who||'-';
+  document.getElementById('popph').textContent=rv&&rv.ph?rv.ph:'-';
+  document.getElementById('popcv').innerHTML=t.cv||'-';
+  document.getElementById('popdate').textContent=t.when;
+  document.getElementById('txpopup').classList.add('show');
+}
+function quickSend(i){
+  selRecv=i;
+  var r=RECVS[i];
+  for(var j=0;j<CTYS.length;j++){if(CTYS[j].code===r.cty){drumIdx=j;recvCty=CTYS[j];break;}}
+  go('s-drum');
+}
+function showSheet(){document.getElementById('sheetbg').classList.add('show');document.getElementById('sheet').style.display='block';}
+function hideSheet(){document.getElementById('sheetbg').classList.remove('show');document.getElementById('sheet').style.display='none';}
+function saveReceiver(){
+  var n=(document.getElementById('nr-name').value||'').trim(),c=document.getElementById('nr-country').value,p=(document.getElementById('nr-phone').value||'').trim();
+  if(!n||!c){showToast('Fill in name and country');return;}
+  var ini=n.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
+  RECVS.push({name:n.split(' ')[0],ini:ini,cty:c,ph:p,last:''});
+  hideSheet();document.getElementById('nr-name').value='';document.getElementById('nr-country').value='';document.getElementById('nr-phone').value='';
+  renderHome();showToast(n+' added!');
+}
+function setAmt(a){document.getElementById('topupamt').value=a;topupAmt=a;}
+function pickMethod(m){
+  topupAmt=parseFloat(document.getElementById('topupamt').value)||0;
+  if(topupAmt<=0){showToast('Please enter an amount');return;}
+  if(m==='tr'){document.getElementById('tramt').innerHTML='&#163;'+topupAmt.toFixed(2);go('s-topup-tr');}
+  else if(m==='card'){document.getElementById('cardamt').innerHTML='&#163;'+(topupAmt*1.005).toFixed(2);go('s-topup-card');}
+  else{showToast('Connecting to bank...');setTimeout(topupDone,1800);}
+}
+function topupDone(){
+  walletBal+=topupAmt;
+  document.getElementById('ov-topup-body').innerHTML='&#163;'+topupAmt.toFixed(2)+' added.<br>New balance: <strong style="color:#7dd3fc">&#163;'+walletBal.toFixed(2)+'</strong>';
+  document.getElementById('ov-topup').classList.add('show');
+  TXS.unshift({tp:'in',ds:'Wallet Top-Up',who:'Bank/Card',when:'Today',am:'+&#163;'+topupAmt.toFixed(2),cv:''});
+}
+function closeTopup(){document.getElementById('ov-topup').classList.remove('show');go('s-home');}
+var DH=96,drumY=0,drumDrag=false,drumLastY=0,drumVel=0,drumRAF=null;
+function buildDrum(){
+  var list=document.getElementById('drum-list');if(!list)return;list.innerHTML='';
+  var S=SEND[sendCur];
+  for(var i=0;i<CTYS.length;i++){
+    var c=CTYS[i],el=document.createElement('div');el.className='drum-item';
+    el.innerHTML='<div class="diflag">'+c.flag+'</div><div><div class="diname">'+c.name+'</div><div class="dicode">'+c.code+'</div><div class="dirate">1 '+S.code+' = '+Math.round(c.rate/S.base).toLocaleString()+' '+c.code+'</div></div>';
+    list.appendChild(el);
+  }
+  snapDrum(drumIdx,false);
+}
+function snapDrum(idx,anim){
+  drumIdx=Math.max(0,Math.min(CTYS.length-1,idx));
+  var w=document.getElementById('drum-wrap');if(!w)return;
+  var wh=w.clientHeight||288;
+  drumY=wh/2-DH/2-drumIdx*DH;
+  var list=document.getElementById('drum-list');if(!list)return;
+  list.style.transition=anim?'transform .28s cubic-bezier(.25,0,.25,1)':'none';
+  list.style.transform='translateY('+drumY+'px)';
+  paintDrum();drumInfo();
+}
+function paintDrum(){
+  var items=document.querySelectorAll('.drum-item');
+  for(var i=0;i<items.length;i++){var d=Math.abs(i-drumIdx);items[i].style.opacity=d===0?'1':d===1?'0.4':'0.15';items[i].style.transform=d===0?'scale(1)':'scale(0.88)';}
+}
+function drumInfo(){
+  var c=CTYS[drumIdx],S=SEND[sendCur];recvCty=c;
+  document.getElementById('selflag').innerHTML=c.flag;
+  document.getElementById('selname').textContent=c.name;
+  document.getElementById('selsub').textContent=c.code+' - 1 '+S.code+' = '+Math.round(c.rate/S.base).toLocaleString()+' '+c.code;
+  var area=document.getElementById('drumrecv'),btn=document.getElementById('drumsend');area.innerHTML='';
+  var matched=[];for(var i=0;i<RECVS.length;i++){if(RECVS[i].cty===c.code)matched.push({r:RECVS[i],i:i});}
+  if(matched.length===0){
+    area.innerHTML='<div class="nonrecv" onclick="showSheet()">+ No saved receiver for '+c.name+' &#8212; tap to add one before sending</div>';
+    btn.textContent='Add Receiver First';
+    btn.classList.add('dim');
+    selRecv=-1;
+  }
+  else{
+    for(var j=0;j<matched.length;j++){
+      var rv=matched[j].r,col=hcol(rv.name),el=document.createElement('div');el.className='rtag';
+      el.innerHTML='<div class="rtav" style="background:'+col+'22;color:'+col+'">'+rv.ini+'</div><div style="flex:1"><div class="rtname">'+rv.name+'</div><div class="rtph">'+(rv.ph||'')+'</div></div><div class="rtarr">SEND &#8594;</div>';
+      selRecv=matched[j].i;btn.textContent='Send to '+rv.name;btn.classList.remove('dim');area.appendChild(el);
+    }
+  }
+}
+function setSendCur(c){
+  sendCur=c;
+  document.getElementById('tab-gbp').style.background=c==='GBP'?'#1a7fd4':'transparent';
+  document.getElementById('tab-gbp').style.color=c==='GBP'?'#fff':'rgba(240,236,224,.38)';
+  document.getElementById('tab-usd').style.background=c==='USD'?'#1a7fd4':'transparent';
+  document.getElementById('tab-usd').style.color=c==='USD'?'#fff':'rgba(240,236,224,.38)';
+  buildDrum();
+}
+function drumIdxFromY(){var w=document.getElementById('drum-wrap');var wh=w?w.clientHeight:288;if(wh===0)wh=288;return Math.round((wh/2-DH/2-drumY)/DH);}
+window.onload=function(){
+  var w=document.getElementById('drum-wrap');if(!w)return;
+  function ds(y){drumDrag=true;drumLastY=y;drumVel=0;if(drumRAF){cancelAnimationFrame(drumRAF);drumRAF=null;}var l=document.getElementById('drum-list');if(l)l.style.transition='none';}
+  function dm(y){if(!drumDrag)return;var dy=y-drumLastY;drumVel=dy;drumLastY=y;drumY+=dy;var l=document.getElementById('drum-list');if(l)l.style.transform='translateY('+drumY+'px)';var ni=Math.max(0,Math.min(CTYS.length-1,drumIdxFromY()));if(ni!==drumIdx){drumIdx=ni;paintDrum();drumInfo();}}
+  function de(){if(!drumDrag)return;drumDrag=false;var vel=drumVel*5;function coast(){if(Math.abs(vel)<0.8){snapDrum(drumIdx,true);return;}drumY+=vel;vel*=0.84;var l=document.getElementById('drum-list');if(l)l.style.transform='translateY('+drumY+'px)';var ni=Math.max(0,Math.min(CTYS.length-1,drumIdxFromY()));if(ni!==drumIdx){drumIdx=ni;paintDrum();drumInfo();}drumRAF=requestAnimationFrame(coast);}drumRAF=requestAnimationFrame(coast);}
+  w.addEventListener('touchstart',function(e){ds(e.touches[0].clientY);},{passive:true});
+  w.addEventListener('touchmove',function(e){dm(e.touches[0].clientY);e.preventDefault();},{passive:false});
+  w.addEventListener('touchend',de);w.addEventListener('touchcancel',de);
+  w.addEventListener('mousedown',function(e){ds(e.clientY);});
+  window.addEventListener('mousemove',function(e){if(drumDrag)dm(e.clientY);});
+  window.addEventListener('mouseup',de);
+  renderHome();
+};
+function launchTransfer(){buildTransfer();go('s-transfer');}
+function buildTransfer(){
+  var S=SEND[sendCur],R=recvCty;if(!R)R=CTYS[0];
+  var rate=R.rate/S.base;
+  document.getElementById('tfrflag').innerHTML=R.flag;
+  document.getElementById('tfrcountry').textContent=R.name;
+  document.getElementById('tfrcode').textContent=R.code;
+  document.getElementById('tfrsym').innerHTML=R.sym;
+  document.getElementById('tfsflag').innerHTML=S.flag;
+  document.getElementById('tfscountry').textContent=S.country;
+  document.getElementById('tfscode').textContent=S.code;
+  document.getElementById('tfssym').innerHTML=S.sym;
+  document.getElementById('tfrate').textContent='1 '+S.code+' = '+rate.toLocaleString('en-GB',{maximumFractionDigits:2})+' '+R.code;
+  document.getElementById('tfwbal').innerHTML=S.sym+walletBal.toFixed(2);
+  var rv=selRecv>=0?RECVS[selRecv]:null;
+  var badge=document.getElementById('tfrbadge'),person=document.getElementById('tfrperson');
+  if(rv&&rv.cty===R.code){badge.textContent=rv.name;badge.style.display='';person.innerHTML='&#128100; '+rv.name+(rv.ph?' &#183; '+rv.ph:'');person.style.display='block';}
+  else{badge.style.display='none';person.style.display='none';}
+  sendCnts={};for(var i=0;i<S.denoms.length;i++)sendCnts[S.denoms[i]]=0;
+  renderNotes();updateTotals();
+}
+function renderNotes(){
+  var con=document.getElementById('noteslist');if(!con)return;con.innerHTML='';
+  var S=SEND[sendCur];
+  for(var i=0;i<S.denoms.length;i++){
+    var d=S.denoms[i],bc=S.cols[i]||'#2a4a2a';
+    var r=parseInt(bc.slice(1,3)||'2a',16),g=parseInt(bc.slice(3,5)||'4a',16),b=parseInt(bc.slice(5,7)||'2a',16);
+    var br=(r*0.299+g*0.587+b*0.114)>100;
+    var tx=br?'#111':'#f0ece0';
+    var lt='rgb('+Math.min(r+45,255)+','+Math.min(g+45,255)+','+Math.min(b+45,255)+')';
+    var ds=d>=10000?(d/1000)+'K':d>=1000?(d/1000)+'K':''+d;
+    var card=document.createElement('div');card.className='nc';
+    card.style.background=bc;
+    var minus=document.createElement('button');minus.className='nbtn m';minus.textContent='-';
+    var face=document.createElement('div');face.className='nface';
+    face.style.background='linear-gradient(135deg,'+lt+','+bc+')';
+    face.innerHTML='<div><div class="nsym" style="color:'+tx+'">'+S.sym+'</div><div class="nden" style="color:'+tx+'">'+ds+'</div></div><div class="nflag">'+S.flag+'</div><div class="nqty" id="nq'+d+'">0x</div>';
+    var plus=document.createElement('button');plus.className='nbtn p';plus.textContent='+';
+    card.appendChild(minus);card.appendChild(face);card.appendChild(plus);
+    con.appendChild(card);
+    (function(dn){minus.onclick=function(){chNote(dn,-1);};plus.onclick=function(){chNote(dn,1);};})(d);
+  }
+}
+function chNote(d,delta){
+  sendCnts[d]=Math.max(0,(sendCnts[d]||0)+delta);
+  var p=document.getElementById('nq'+d);
+  if(p){p.textContent=sendCnts[d]+'x';if(sendCnts[d]>0)p.classList.add('show');else p.classList.remove('show');}
+  updateTotals();
+}
+function updateTotals(){
+  var S=SEND[sendCur],R=recvCty;if(!R)R=CTYS[0];
+  var rate=R.rate/S.base,tot=0;
+  for(var d in sendCnts)tot+=(sendCnts[d]||0)*parseFloat(d);
+  var rt=tot*rate,sp=tot.toFixed(2).split('.'),rp=rt.toFixed(2).split('.');
+  document.getElementById('tfsint').textContent=parseInt(sp[0]).toLocaleString('en-GB');
+  document.getElementById('tfsdec').textContent=sp[1];
+  document.getElementById('tfrint').textContent=parseInt(rp[0]).toLocaleString('en-GB');
+  document.getElementById('tfrdec').textContent=rp[1];
+}
+var ADS=[
+  {bg:'linear-gradient(135deg,#1a0a2e,#2a0e4a)',logo:'&#127758;',t:'TAP Pro - Zero fees',s:'First 3 transfers free',cc:'#c4a0ff'},
+  {bg:'linear-gradient(135deg,#1a1000,#2e1c00)',logo:'&#128179;',t:'TAP Visa Debit Card',s:'Spend anywhere',cc:'#FFB612'},
+  {bg:'linear-gradient(135deg,#001a10,#002e18)',logo:'&#127968;',t:'Earn 4.5% on balance',s:'TAP Savings - No lock-in',cc:'#7dd3fc'},
+  {bg:'linear-gradient(135deg,#1a0000,#300a0a)',logo:'&#128241;',t:'Refer a friend, earn &#163;10',s:'They send &#163;50+, you both win',cc:'#f87171'},
+];
+var adIdx=0;
+function nextAd(){
+  adIdx=(adIdx+1)%ADS.length;var a=ADS[adIdx];
+  var el=document.getElementById('adban');if(el)el.style.background=a.bg;
+  document.getElementById('adlogo').innerHTML=a.logo;
+  document.getElementById('adtitle').innerHTML=a.t;
+  document.getElementById('adsub').textContent=a.s;
+  document.getElementById('adcta').style.color=a.cc;
+}
+setInterval(nextAd,6000);
+function confirmSend(){
+  var S=SEND[sendCur],R=recvCty;if(!R)R=CTYS[0];
+  if(selRecv<0){showToast('Please add a receiver for '+R.name+' first');return;}
+  var rate=R.rate/S.base,tot=0;
+  for(var d in sendCnts)tot+=(sendCnts[d]||0)*parseFloat(d);
+  if(tot<=0){showToast('Add some notes first');return;}
+  if(tot>walletBal){showToast('Insufficient balance');return;}
+  walletBal-=tot;
+  var rt=(tot*rate).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+  var now=new Date(),ts=('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+  var rn=selRecv>=0&&RECVS[selRecv]?RECVS[selRecv].name:R.name;
+  TXS.unshift({tp:'out',ds:'Sent to '+R.name,who:rn,when:'Today '+ts,am:'-'+S.sym+tot.toFixed(2),cv:R.sym+rt+' '+R.code});
+  document.getElementById('ov-send-body').innerHTML=S.sym+tot.toFixed(2)+' sent.<br>Recipient gets <strong style="color:#7dd3fc">'+R.sym+rt+' '+R.code+'</strong>';
+  document.getElementById('ov-send').classList.add('show');
+}
+function closeSend(){document.getElementById('ov-send').classList.remove('show');sendCnts={};renderNotes();updateTotals();go('s-home');}
+function signOut(){
+  navStack = [];
+  // Reset all state
+  walletBal=250;
+  TXS=[
+    {tp:'out',ds:'Sent to Gambia',  who:'Fatou',when:'Today 09:14',   am:'-&#163;50.00', cv:'D 5,270.00'},
+    {tp:'in', ds:'Wallet Top-Up',  who:'Bank', when:'Yesterday 18:30',am:'+&#163;200.00',cv:''},
+    {tp:'out',ds:'Sent to Nigeria', who:'Chidi',when:'24 May 11:02',  am:'-&#163;30.00', cv:'&#8358;61,500'},
+    {tp:'out',ds:'Sent to Ghana',   who:'Akua', when:'20 May 08:45',  am:'-&#163;20.00', cv:'&#8373;396.00'},
+  ];
+  otpVal='';
+  selRecv=-1;
+  sendCnts={};
+  qrOn=false;
+  // Hide QR if showing
+  var qr=document.getElementById('qrpanel');if(qr)qr.classList.remove('show');
+  var wm=document.getElementById('wcmain');if(wm)wm.style.visibility='visible';
+  // Return to splash
+  showScreen('s-splash');
+  showToast('Signed out successfully');
+}
+
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2400);}
+</script>
+</body>
+</html>
