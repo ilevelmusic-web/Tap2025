@@ -162,3 +162,8 @@ signal.on('connection', function(socket){
   });
 });
 
+// ── Start ─────────────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, function(){
+  console.log('TAP Money server running on port', PORT);
+});
