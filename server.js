@@ -1,129 +1,193 @@
-// TAP Money — Payment + WebRTC Signaling Server
-// Run: npm install socket.io   (only needed once)
+/**
+ * TAP Money — Signaling + Payment Server
+ * Render deployment: https://tap-payment-server-9cc5.onrender.com
+ * GitHub: github.com/ilevelmusic-web/Tap2025
+ */
 
-const http = require('http');
-const https = require('https');
-const url = require('url');
+const express    = require('express');
+const http       = require('http');
+const { Server } = require('socket.io');
+const cors       = require('cors');
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-const PORT = process.env.PORT || 3000;
+const app    = express();
+const server = http.createServer(app);
 
-// ── HTTP REQUEST HANDLER ──
-const requestHandler = (req, res) => {
-  setCORSHeaders(res);
-  if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
+// ── CORS ──────────────────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'https://tap.tamalavzw.org',
+  'http://localhost:3000',
+  'http://localhost:5500',
+  'null',          // local file:// in browser
+];
 
-  const parsed = url.parse(req.url, true);
+app.use(cors({
+  origin: function(origin, cb){
+    if(!origin || ALLOWED_ORIGINS.indexOf(origin) !== -1) cb(null, true);
+    else cb(new Error('CORS: origin not allowed — ' + origin));
+  },
+  credentials: true
+}));
+app.use(express.json());
 
-  if (req.method === 'POST' && parsed.pathname === '/api/create-payment-intent') {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const { amount, currency } = JSON.parse(body);
-        if (!amount || amount <= 0) {
-          res.writeHead(400);
-          res.end(JSON.stringify({ error: 'Invalid amount' }));
-          return;
-        }
-        stripeRequest('POST', '/v1/payment_intents', {
-          amount: Math.round(amount),
-          currency: (currency || 'gbp').toLowerCase(),
-          'automatic_payment_methods[enabled]': 'true'
-        }, (err, data) => {
-          if (err || data.error) {
-            res.writeHead(500);
-            res.end(JSON.stringify({ error: err ? err.message : data.error.message }));
-            return;
-          }
-          res.writeHead(200);
-          res.end(JSON.stringify({ client_secret: data.client_secret }));
-        });
-      } catch(e) {
-        res.writeHead(400);
-        res.end(JSON.stringify({ error: 'Invalid request body' }));
+// ── Socket.io ─────────────────────────────────────────────────────────────────
+const io = new Server(server, {
+  cors: {
+    origin: ALLOWED_ORIGINS,
+    methods: ['GET','POST'],
+    credentials: true
+  }
+});
+
+// ── In-memory registries ──────────────────────────────────────────────────────
+//  tapCode  →  socket.id   (who is currently online)
+const onlineUsers = {};
+
+//  roomId  →  { callerId: socket.id, calleeId: socket.id | null }
+const activeRooms = {};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  /signal  namespace  —  WebRTC signaling + call coordination
+// ─────────────────────────────────────────────────────────────────────────────
+const signal = io.of('/signal');
+
+signal.on('connection', function(socket){
+  console.log('[signal] connected:', socket.id);
+
+  // ── Register this device under a TAP code ─────────────────────────────────
+  // Emitted by the client on app open / after login.
+  // { code: "AMA1K9F" }
+  socket.on('register', function(data){
+    var code = (data && data.code) ? String(data.code).toUpperCase() : null;
+    if(!code) return;
+    socket.tapCode = code;
+    onlineUsers[code] = socket.id;
+    console.log('[signal] registered:', code, '->', socket.id);
+  });
+
+  // ── Outgoing call request ─────────────────────────────────────────────────
+  // Caller emits this; server forwards call-incoming to the callee if online.
+  // { room, callerName, callerCode, targetCode }
+  socket.on('call-request', function(data){
+    var room       = data.room;
+    var callerName = data.callerName || 'Someone';
+    var callerCode = data.callerCode || socket.tapCode;
+    var targetCode = data.targetCode ? String(data.targetCode).toUpperCase() : null;
+
+    // Record room
+    activeRooms[room] = { callerId: socket.id, calleeId: null };
+    socket.join(room);
+
+    if(!targetCode || !onlineUsers[targetCode]){
+      // Target not online — notify caller
+      socket.emit('call-unavailable', { message: 'User is not available right now' });
+      return;
+    }
+
+    var targetSocketId = onlineUsers[targetCode];
+    activeRooms[room].calleeId = targetSocketId;
+
+    // Tell the target they have an incoming call
+    signal.to(targetSocketId).emit('call-incoming', {
+      room:       room,
+      callerName: callerName,
+      callerCode: callerCode
+    });
+
+    console.log('[signal] call-request', callerCode, '->', targetCode, 'room:', room);
+  });
+
+  // ── Callee accepts ────────────────────────────────────────────────────────
+  // { room }
+  socket.on('call-accept', function(data){
+    var room = data.room;
+    socket.join(room);
+    if(activeRooms[room]) activeRooms[room].calleeId = socket.id;
+    socket.to(room).emit('call-accepted', { room: room });
+    console.log('[signal] call-accepted room:', room);
+  });
+
+  // ── Callee declines ───────────────────────────────────────────────────────
+  // { room }
+  socket.on('call-decline', function(data){
+    var room = data.room;
+    socket.to(room).emit('call-declined', { room: room });
+    delete activeRooms[room];
+    console.log('[signal] call-declined room:', room);
+  });
+
+  // ── Either party ends the call ────────────────────────────────────────────
+  // { room }
+  socket.on('call-end', function(data){
+    var room = data.room;
+    socket.to(room).emit('call-ended', { room: room });
+    delete activeRooms[room];
+    console.log('[signal] call-ended room:', room);
+  });
+
+  // ── WebRTC offer (caller → callee) ────────────────────────────────────────
+  // { room, sdp }
+  socket.on('webrtc-offer', function(data){
+    socket.to(data.room).emit('webrtc-offer', { room: data.room, sdp: data.sdp });
+  });
+
+  // ── WebRTC answer (callee → caller) ──────────────────────────────────────
+  // { room, sdp }
+  socket.on('webrtc-answer', function(data){
+    socket.to(data.room).emit('webrtc-answer', { room: data.room, sdp: data.sdp });
+  });
+
+  // ── ICE candidates (both directions) ─────────────────────────────────────
+  // { room, candidate }
+  socket.on('webrtc-ice', function(data){
+    socket.to(data.room).emit('webrtc-ice', { room: data.room, candidate: data.candidate });
+  });
+
+  // ── Disconnect cleanup ────────────────────────────────────────────────────
+  socket.on('disconnect', function(){
+    console.log('[signal] disconnected:', socket.id, socket.tapCode || '(unregistered)');
+
+    // Remove from online registry
+    if(socket.tapCode && onlineUsers[socket.tapCode] === socket.id){
+      delete onlineUsers[socket.tapCode];
+    }
+
+    // End any room this socket was part of
+    Object.keys(activeRooms).forEach(function(room){
+      var r = activeRooms[room];
+      if(r.callerId === socket.id || r.calleeId === socket.id){
+        signal.to(room).emit('call-ended', { room: room });
+        delete activeRooms[room];
       }
     });
-    return;
-  }
-
-  res.writeHead(404);
-  res.end(JSON.stringify({ error: 'Not found' }));
-};
-
-function setCORSHeaders(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Content-Type', 'application/json');
-}
-
-function stripeRequest(method, path, data, callback) {
-  const postData = new url.URLSearchParams(data).toString();
-  const options = {
-    hostname: 'api.stripe.com',
-    port: 443,
-    path: path,
-    method: method,
-    headers: {
-      'Authorization': 'Basic ' + Buffer.from(STRIPE_SECRET_KEY + ':').toString('base64'),
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': Buffer.byteLength(postData)
-    }
-  };
-  const req = https.request(options, (res) => {
-    let body = '';
-    res.on('data', chunk => body += chunk);
-    res.on('end', () => {
-      try { callback(null, JSON.parse(body)); }
-      catch(e) { callback(e); }
-    });
-  });
-  req.on('error', callback);
-  req.write(postData);
-  req.end();
-}
-
-// ── CREATE HTTP SERVER ──
-const server = http.createServer(requestHandler);
-
-// ── ATTACH WEBRTC SIGNALING ──
-const { Server } = require('socket.io');
-const io = new Server(server, {
-  path: '/signal',
-  cors: { origin: '*', methods: ['GET', 'POST'] },
-  pingTimeout: 60000,
-  pingInterval: 25000
-});
-
-const rooms = {};
-io.on('connection', socket => {
-  let currentRoom = null;
-  socket.on('join', roomId => {
-    currentRoom = roomId;
-    socket.join(roomId);
-    if (!rooms[roomId]) rooms[roomId] = new Set();
-    rooms[roomId].add(socket.id);
-    const peers = [...rooms[roomId]].filter(id => id !== socket.id);
-    socket.emit('room-info', { peers });
-    socket.to(roomId).emit('peer-joined', socket.id);
-    console.log('[TAP] ' + socket.id + ' joined ' + roomId + ' (' + rooms[roomId].size + ' peers)');
-  });
-  socket.on('offer',  d => io.to(d.to).emit('offer',  { from: socket.id, offer:  d.offer  }));
-  socket.on('answer', d => io.to(d.to).emit('answer', { from: socket.id, answer: d.answer }));
-  socket.on('ice',    d => io.to(d.to).emit('ice',    { from: socket.id, candidate: d.candidate }));
-  socket.on('disconnect', () => {
-    if (currentRoom && rooms[currentRoom]) {
-      rooms[currentRoom].delete(socket.id);
-      socket.to(currentRoom).emit('peer-left', socket.id);
-      if (rooms[currentRoom].size === 0) delete rooms[currentRoom];
-    }
   });
 });
-console.log('[TAP] WebRTC signaling ready at /signal');
 
-// ── START ──
-server.listen(PORT, () => {
-  console.log('TAP payment server running on port ' + PORT);
-  console.log('Stripe key loaded:', !!STRIPE_SECRET_KEY);
+// ── Health + debug routes ─────────────────────────────────────────────────────
+app.get('/', function(req, res){
+  res.json({
+    status: 'ok',
+    service: 'TAP Money Server',
+    online: Object.keys(onlineUsers).length,
+    activeCalls: Object.keys(activeRooms).length
+  });
+});
+
+app.get('/online', function(req, res){
+  // Returns list of online TAP codes (useful for testing)
+  res.json({ online: Object.keys(onlineUsers) });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  EXISTING STRIPE / PAYMENT ROUTES
+//  ↓  Paste your existing Stripe webhook and payment intent routes below here.
+//  Nothing above this line should need changing.
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, function(){
+  console.log('TAP Money server running on port', PORT);
 });
