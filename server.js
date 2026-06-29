@@ -161,7 +161,19 @@ signal.on('connection', function(socket){
     });
   });
 });
+jsapp.get('/', function(req, res){
+  res.json({
+    status: 'ok',
+    service: 'TAP Money Server',
+    online: Object.keys(onlineUsers).length,
+    activeCalls: Object.keys(activeRooms).length
+  });
+});
 
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, function(){
+  console.log('TAP Money server running on port', PORT);
+});
 // ── Start ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, function(){
