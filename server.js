@@ -162,32 +162,3 @@ signal.on('connection', function(socket){
   });
 });
 
-// ── Health + debug routes ─────────────────────────────────────────────────────
-app.get('/', function(req, res){
-  res.json({
-    status: 'ok',
-    service: 'TAP Money Server',
-    online: Object.keys(onlineUsers).length,
-    activeCalls: Object.keys(activeRooms).length
-  });
-});
-
-app.get('/online', function(req, res){
-  // Returns list of online TAP codes (useful for testing)
-  res.json({ online: Object.keys(onlineUsers) });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  EXISTING STRIPE / PAYMENT ROUTES
-//  ↓  Paste your existing Stripe webhook and payment intent routes below here.
-//  Nothing above this line should need changing.
-// ─────────────────────────────────────────────────────────────────────────────
-
-
-
-
-// ── Start ─────────────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, function(){
-  console.log('TAP Money server running on port', PORT);
-});
