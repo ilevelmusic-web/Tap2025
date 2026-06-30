@@ -8,6 +8,7 @@ const express    = require('express');
 const http       = require('http');
 const { Server } = require('socket.io');
 const cors       = require('cors');
+const stripe     = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app    = express();
 const server = http.createServer(app);
@@ -161,21 +162,50 @@ signal.on('connection', function(socket){
     });
   });
 });
-jsapp.get('/', function(req, res){
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  STRIPE — Payment Intent creation
+// ─────────────────────────────────────────────────────────────────────────────
+app.post('/api/create-payment-intent', async function(req, res){
+  try {
+    var amount   = req.body.amount;
+    var currency = req.body.currency || 'gbp';
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
+
+    var paymentIntent = await stripe.paymentIntents.create({
+      amount: amount,
+      currency: currency,
+      automatic_payment_methods: { enabled: true }
+    });
+
+    res.json({ client_secret: paymentIntent.client_secret });
+  } catch (err) {
+    console.error('[stripe] create-payment-intent error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Health + debug routes ─────────────────────────────────────────────────────
+app.get('/', function(req, res){
   res.json({
     status: 'ok',
     service: 'TAP Money Server',
     online: Object.keys(onlineUsers).length,
-    activeCalls: Object.keys(activeRooms).length
+    activeCalls: Object.keys(activeRooms).length,
+    stripeKeyLoaded: !!process.env.STRIPE_SECRET_KEY
   });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, function(){
-  console.log('TAP Money server running on port', PORT);
+app.get('/online', function(req, res){
+  res.json({ online: Object.keys(onlineUsers) });
 });
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, function(){
   console.log('TAP Money server running on port', PORT);
+  console.log('Stripe key loaded:', !!process.env.STRIPE_SECRET_KEY);
 });
